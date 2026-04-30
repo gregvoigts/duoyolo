@@ -38,8 +38,12 @@ class ClassificationValidator(DuoYoloValidatorMixin, BaseClassificationValidator
         """Return a formatted string summarizing classification metrics."""
         return ("%22s" + "%11s" * 3) % ("classes", "top1_acc", "top5_acc", "bacc(recall)")
 
-    def build_dataset(self, img_path: str, mode: str = "val", batch=None):
-        return build_classify_dataset(self.args, img_path, self.data, stride=self.stride)
+    def build_dataset(self, img_path: str):
+        if str(self.args.data).rsplit(".", 1)[-1] in {"yaml", "yml"}:
+            return build_classify_dataset(self.args, img_path, self.data, stride=self.stride)
+        else:
+            return super().build_dataset(img_path) 
+        
 
     def get_stats(self) -> dict[str, Any]:
         """

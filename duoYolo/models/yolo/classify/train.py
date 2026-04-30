@@ -4,7 +4,7 @@ from duoYolo.data.build import build_classify_dataset
 
 from ultralytics.models.yolo.classify.train import ClassificationTrainer as BaseClassificationTrainer
 from ultralytics.utils import emojis
-from ultralytics.data.utils import check_det_dataset
+from ultralytics.data.utils import check_det_dataset, check_cls_dataset
 from ultralytics.utils.torch_utils import unwrap_model
 
 class ClassificationTrainer(BaseClassificationTrainer):
@@ -13,8 +13,11 @@ class ClassificationTrainer(BaseClassificationTrainer):
     """
 
     def build_dataset(self, img_path: str, mode: str = "train", batch=None):
-        gs = max(int(unwrap_model(self.model).stride.max() if self.model else 0), 32)
-        return build_classify_dataset(self.args, img_path, self.data, mode=mode, rect=mode == "val", stride=gs)
+        if str(self.args.data).rsplit(".", 1)[-1] in {"yaml", "yml"}:
+            gs = max(int(unwrap_model(self.model).stride.max() if self.model else 0), 32)
+            return build_classify_dataset(self.args, img_path, self.data, mode=mode, rect=mode == "val", stride=gs)
+        else:
+            return super().build_dataset(img_path, mode=mode, batch=batch)      
 
 
     def get_dataset(self):
@@ -25,9 +28,13 @@ class ClassificationTrainer(BaseClassificationTrainer):
 
         Returns:
             (dict): A dictionary containing the training/validation/test dataset and category names.
-        """
+        """      
+
         try:
+            if str(self.args.data).rsplit(".", 1)[-1] in {"yaml", "yml"}:
                 data = check_det_dataset(self.args.data)
+            else:
+                data = check_cls_dataset(self.args.data, split=self.args.split)
         except Exception as e:
             raise RuntimeError(emojis(f"Dataset '{self.args.data}' error ❌ {e}")) from e
         return data
