@@ -137,6 +137,7 @@ class MultitaskMosaic(Mosaic):
             "instances": Instances.concatenate(instances, axis=0),
             "split_indices": np.concatenate(split_indices, 0),
             "mosaic_border": self.border,
+            "task_count": mosaic_labels[0].get("task_count")
         }
         final_labels["instances"].clip(imgsz, imgsz)
         good = final_labels["instances"].remove_zero_area_boxes()

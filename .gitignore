@@ -30,6 +30,7 @@ requirements.txt
 !examples/**/requirements.txt
 setup.py
 ultralytics.egg-info
+ultralytics
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

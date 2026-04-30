@@ -57,35 +57,36 @@ class MultitaskPredictor(BasePredictor):
         constructed_self = SimpleNamespace(
             args=self.args,
             model=self.model,
-            _feats=self._feats,
-            batch=self.batch,
-            get_obj_feats=DetectionPredictor.get_obj_feats,
-            construct_results=DetectionPredictor.construct_results, 
-            construct_result=DetectionPredictor.construct_result       
+            _feats=getattr(self, "_feats", None),
+            batch=self.batch     
         )
         results = ()
         for idx, (pred, task) in enumerate(zip(preds, self.args.tasks)):
             if task == "detect":
-                constructed_self.construct_result = DetectionPredictor.construct_result
-                constructed_self.construct_results = DetectionPredictor.construct_results
-                res = DetectionPredictor.postprocess(constructed_self, pred, img, orig_img)
+                v = DetectionPredictor.__new__(DetectionPredictor)
+                v.__dict__.update(constructed_self.__dict__)                
+                res = v.postprocess(pred, img, orig_img)
                 results += (res,)
             elif task == "classify":
-                res = ClassificationPredictor.postprocess(constructed_self, pred, img, orig_img) 
+                v = ClassificationPredictor.__new__(ClassificationPredictor)
+                v.__dict__.update(constructed_self.__dict__)
+                res = v.postprocess( pred, img, orig_img) 
                 results += (res,)
             elif task == "obb":
-                constructed_self.construct_result = OBBPredictor.construct_result
-                res = DetectionPredictor.postprocess(constructed_self, pred, img, orig_img)
+                v = OBBPredictor.__new__(OBBPredictor)
+                v.__dict__.update(constructed_self.__dict__)
+                res = v.postprocess(pred, img, orig_img)
                 results += (res,)
             elif task == "pose":
-                constructed_self.construct_result =PosePredictor.construct_result
-                res = DetectionPredictor.postprocess(constructed_self, pred, img, orig_img)
+                v = PosePredictor.__new__(PosePredictor)
+                v.__dict__.update(constructed_self.__dict__)
+                res = v.postprocess(pred, img, orig_img)
                 results += (res,)
             elif task == "segment":
                 protos = preds[1][-1] if isinstance(preds[1], tuple) else preds[1]
-                constructed_self.construct_result = SegmentationPredictor.construct_result
-                constructed_self.construct_results = SegmentationPredictor.construct_results
-                res = DetectionPredictor.postprocess(constructed_self, pred, img, orig_img, protos=protos)
+                v = SegmentationPredictor.__new__(SegmentationPredictor)
+                v.__dict__.update(constructed_self.__dict__)
+                res = v.postprocess(pred, img, orig_img, protos=protos)
                 results += (res,)
 
             results_objs = [MultitaskResults(result) for result in zip(*results)]

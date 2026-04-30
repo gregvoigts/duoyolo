@@ -256,8 +256,9 @@ class MultitaskValidator(DuoYoloValidatorMixin, BaseValidator):
                 masks = (masks == index).float()
             else:
                 masks = batch["masks"][task_key][si]
+                masks = masks.unsqueeze(0)
             if nl:
-                mask_size = [s if self.process is ops.process_mask_native else s // 4 for s in pbatch["imgsz"]]
+                mask_size = tuple(s if self.process is ops.process_mask_native else s // 4 for s in pbatch["imgsz"])
                 if masks.shape[1:] != mask_size:
                     masks = F.interpolate(masks[None], mask_size, mode="bilinear", align_corners=False)[0]
                     masks = masks.gt_(0.5)

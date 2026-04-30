@@ -97,6 +97,8 @@ def test_task(trainer_cls, validator_cls, predictor_cls, data, model, weights):
     cfg = get_cfg(DEFAULT_CFG)
     cfg.data = data
     cfg.imgsz = 32
+    if trainer_cls == multitask.MultitaskTrainer:
+        cfg.tasks = ["detect", "segment"]
     val = validator_cls(args=cfg)
     val.add_callback("on_val_start", test_func)
     assert test_func in val.callbacks["on_val_start"], "on_val_start callback not registered"
