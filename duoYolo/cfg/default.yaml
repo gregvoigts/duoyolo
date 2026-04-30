@@ -1,0 +1,7 @@
+# Extension to the YOLO default config for DuoYolo
+
+task: multitask # (str) overriden from yolos default config
+tasks: ["detect", "classify"] # (list) list of tasks for multitask training
+lambda_list: [1.0, 1.0] # (list) list of loss multipliers for each task
+save_dir:  # (str, optional) directory to save results; 
+end2end: False # argument from future ultralytics. Added to get test to work. TODO: remove when updating ultralytics
