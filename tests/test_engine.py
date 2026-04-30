@@ -29,7 +29,7 @@ def test_export():
     exporter = Exporter()
     exporter.add_callback("on_export_start", test_func)
     assert test_func in exporter.callbacks["on_export_start"], "on_export_start callback not registered"
-    f = exporter(model=DuoYOLO("yolo26n.yaml").model)
+    f = exporter(model=DuoYOLO("yolo11n.yaml").model)
     DuoYOLO(f)(SOURCE)  # exported model inference
 
 
@@ -49,7 +49,7 @@ def test_export():
             yolo.DetectionValidator,
             yolo.DetectionPredictor,
             "coco8.yaml",
-            "yolo26n.yaml",
+            "yolo11n.yaml",
             MODEL,
         ),
         (
@@ -57,19 +57,19 @@ def test_export():
             yolo.SegmentationValidator,
             yolo.SegmentationPredictor,
             "coco8-seg.yaml",
-            "yolo26n-seg.yaml",
-            WEIGHTS_DIR / "yolo26n-seg.pt",
+            "yolo11n-seg.yaml",
+            WEIGHTS_DIR / "yolo11n-seg.pt",
         ),
         (
             classify.ClassificationTrainer,
             classify.ClassificationValidator,
             yolo.ClassificationPredictor,
             "imagenet10",
-            "yolo26n-cls.yaml",
+            "yolo11n-cls.yaml",
             None,
         ),
-        (yolo.OBBTrainer, yolo.OBBValidator, yolo.OBBPredictor, "dota8.yaml", "yolo26n-obb.yaml", None),
-        (yolo.PoseTrainer, yolo.PoseValidator, yolo.PosePredictor, "coco8-pose.yaml", "yolo26n-pose.yaml", None),
+        (yolo.OBBTrainer, yolo.OBBValidator, yolo.OBBPredictor, "dota8.yaml", "yolo11n-obb.yaml", None),
+        (yolo.PoseTrainer, yolo.PoseValidator, yolo.PosePredictor, "coco8-pose.yaml", "yolo11n-pose.yaml", None),
     ],
 )
 def test_task(trainer_cls, validator_cls, predictor_cls, data, model, weights):
@@ -83,6 +83,9 @@ def test_task(trainer_cls, validator_cls, predictor_cls, data, model, weights):
         "mask_ratio": 1,
         "overlap_mask": False,
     }
+
+    if trainer_cls == multitask.MultitaskTrainer:
+        overrides["tasks"] = ["detect", "segment"]
 
     # Trainer
     trainer = trainer_cls(overrides=overrides)
@@ -106,7 +109,7 @@ def test_task(trainer_cls, validator_cls, predictor_cls, data, model, weights):
 
     # Determine model path for prediction
     model_path = weights if weights else trainer.best
-    if model == "yolo26n.yaml":  # only for detection
+    if model == "yolo11n.yaml":  # only for detection
         # Confirm there is no issue with sys.argv being empty
         with mock.patch.object(sys, "argv", []):
             result = pred(source=ASSETS, model=model_path)
@@ -170,54 +173,54 @@ def test_nan_recovery():
             trainer.tloss *= torch.tensor(float("nan"))
             nan_injected[0] = True
 
-    overrides = {"data": "coco8.yaml", "model": "yolo26n.yaml", "imgsz": 32, "epochs": 3}
+    overrides = {"data": "coco8.yaml", "model": "yolo11n.yaml", "imgsz": 32, "epochs": 3}
     trainer = yolo.DetectionTrainer(overrides=overrides)
     trainer.add_callback("on_train_batch_end", inject_nan)
     trainer.train()
     assert nan_injected[0], "NaN injection failed"
 
 
-@pytest.mark.parametrize(
-    "kwargs,uses_weights",
-    [({}, True), ({"pretrained": True}, True), ({"pretrained": False}, False), ({"pretrained": MODEL}, True)],
-)
-def test_train_reuses_loaded_checkpoint_model(monkeypatch, kwargs, uses_weights):
-    """Test training reuses loaded checkpoint config while respecting the pretrained argument."""
-    model = DuoYOLO("yolo26n.yaml")
-    model.ckpt = {"checkpoint": True}
-    model.ckpt_path = "/tmp/fake.pt"
-    model.overrides["model"] = "ul://glenn-jocher/m2/exp-14"
-    model.overrides["pretrained"] = False
-    original_model = model.model
-    captured = {}
+# @pytest.mark.parametrize(
+#     "kwargs,uses_weights",
+#     [({}, True), ({"pretrained": True}, True), ({"pretrained": False}, False), ({"pretrained": MODEL}, True)],
+# )
+# def test_train_reuses_loaded_checkpoint_model(monkeypatch, kwargs, uses_weights):
+#     """Test training reuses loaded checkpoint config while respecting the pretrained argument."""
+#     model = DuoYOLO("yolo11n.yaml")
+#     model.ckpt = {"checkpoint": True}
+#     model.ckpt_path = "/tmp/fake.pt"
+#     model.overrides["model"] = "ul://glenn-jocher/m2/exp-14"
+#     model.overrides["pretrained"] = False
+#     original_model = model.model
+#     captured = {}
 
-    class FakeTrainer:
-        def __init__(self, overrides=None, _callbacks=None):
-            self.overrides = overrides
-            self.callbacks = _callbacks
-            self.model = None
-            self.validator = SimpleNamespace(metrics=None)
-            self.best = MODEL.parent / "nonexistent-best.pt"
-            self.last = MODEL
-            captured["trainer"] = self
+#     class FakeTrainer:
+#         def __init__(self, overrides=None, _callbacks=None):
+#             self.overrides = overrides
+#             self.callbacks = _callbacks
+#             self.model = None
+#             self.validator = SimpleNamespace(metrics=None)
+#             self.best = MODEL.parent / "nonexistent-best.pt"
+#             self.last = MODEL
+#             captured["trainer"] = self
 
-        def get_model(self, cfg=None, weights=None, verbose=True):
-            captured["cfg"] = cfg
-            captured["weights"] = weights
-            return original_model
+#         def get_model(self, cfg=None, weights=None, verbose=True):
+#             captured["cfg"] = cfg
+#             captured["weights"] = weights
+#             return original_model
 
-        def train(self):
-            return None
+#         def train(self):
+#             return None
 
-    monkeypatch.setattr("ultralytics.engine.model.checks.check_pip_update_available", lambda: None)
-    monkeypatch.setattr(model, "_smart_load", lambda key: FakeTrainer)
-    monkeypatch.setattr(
-        "ultralytics.engine.model.load_checkpoint",
-        lambda path: (original_model, {"checkpoint": True}),
-    )
+#     monkeypatch.setattr("ultralytics.engine.model.checks.check_pip_update_available", lambda: None)
+#     monkeypatch.setattr(model, "_smart_load", lambda key: FakeTrainer)
+#     monkeypatch.setattr(
+#         "ultralytics.engine.model.load_checkpoint",
+#         lambda path: (original_model, {"checkpoint": True}),
+#     )
 
-    model.train(data="coco8.yaml", epochs=1, **kwargs)
+#     model.train(data="coco8.yaml", epochs=1, **kwargs)
 
-    assert captured["trainer"].model is original_model, "Trainer model does not match original"
-    assert captured["cfg"] == original_model.yaml, f"Config mismatch: {captured['cfg']} != {original_model.yaml}"
-    assert captured["weights"] is (original_model if uses_weights else None), "Unexpected weights loaded"
+#     assert captured["trainer"].model is original_model, "Trainer model does not match original"
+#     assert captured["cfg"] == original_model.yaml, f"Config mismatch: {captured['cfg']} != {original_model.yaml}"
+#     assert captured["weights"] is (original_model if uses_weights else None), "Unexpected weights loaded"

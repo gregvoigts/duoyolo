@@ -398,7 +398,7 @@ def yaml_model_load(path):
     try:
         yaml_file = check_yaml(unified_path, hard=False) or check_yaml(path)
     except (FileNotFoundError):
-        yaml_file = ultralytics_check_yaml(path)  # fallback to ultralytics yaml_model_load which also checks for pretrained weights
+        yaml_file = ultralytics_check_yaml(unified_path, hard=False) or ultralytics_check_yaml(path)  # fallback to ultralytics yaml_model_load which also checks for pretrained weights
     d = YAML.load(yaml_file)  # model dict
     d["scale"] = guess_model_scale(path)
     d["yaml_file"] = str(yaml_file)

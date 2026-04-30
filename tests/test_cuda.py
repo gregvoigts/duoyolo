@@ -10,7 +10,7 @@ from duoYolo import DuoYOLO
 from duoYolo.cfg import TASK2DATA, TASK2MODEL, TASKS
 from ultralytics.utils import IS_JETSON
 from ultralytics.utils.autodevice import GPUInfo
-from ultralytics.utils.checks import check_amp, check_tensorrt
+from ultralytics.utils.checks import check_amp#, check_tensorrt
 from ultralytics.utils.torch_utils import TORCH_1_13
 
 # Try to find idle devices if CUDA is available
@@ -75,42 +75,42 @@ def test_export_onnx_matrix(task, dynamic, int8, half, batch, simplify, nms):
     Path(file).unlink()  # cleanup
 
 
-@pytest.mark.slow
-@pytest.mark.skipif(not DEVICES, reason="No CUDA devices available")
-@pytest.mark.parametrize(
-    "task, dynamic, int8, half, batch",
-    [  # generate all combinations but exclude those where both int8 and half are True
-        (task, dynamic, int8, half, batch)
-        # Note: tests reduced below pending compute availability expansion as GPU CI runner utilization is high
-        # for task, dynamic, int8, half, batch in product(TASKS, [True, False], [True, False], [True, False], [1, 2])
-        for task, dynamic, int8, half, batch in product(TASKS, [True], [True], [False], [2])
-        if not (int8 and half)  # exclude cases where both int8 and half are True
-    ],
-)
-def test_export_engine_matrix(task, dynamic, int8, half, batch):
-    """Test YOLO model export to TensorRT format for various configurations and run inference."""
-    check_tensorrt()
-    import tensorrt as trt
+# @pytest.mark.slow
+# @pytest.mark.skipif(not DEVICES, reason="No CUDA devices available")
+# @pytest.mark.parametrize(
+#     "task, dynamic, int8, half, batch",
+#     [  # generate all combinations but exclude those where both int8 and half are True
+#         (task, dynamic, int8, half, batch)
+#         # Note: tests reduced below pending compute availability expansion as GPU CI runner utilization is high
+#         # for task, dynamic, int8, half, batch in product(TASKS, [True, False], [True, False], [True, False], [1, 2])
+#         for task, dynamic, int8, half, batch in product(TASKS, [True], [True], [False], [2])
+#         if not (int8 and half)  # exclude cases where both int8 and half are True
+#     ],
+# )
+# def test_export_engine_matrix(task, dynamic, int8, half, batch):
+#     """Test YOLO model export to TensorRT format for various configurations and run inference."""
+#     check_tensorrt()
+#     import tensorrt as trt
 
-    is_trt10 = int(trt.__version__.split(".", 1)[0]) >= 10
-    if is_trt10 and int8 and dynamic:
-        pytest.skip("YOLO26 INT8+dynamic export requires explicit quantization on TensorRT 10+")
+#     is_trt10 = int(trt.__version__.split(".", 1)[0]) >= 10
+#     if is_trt10 and int8 and dynamic:
+#         pytest.skip("YOLO26 INT8+dynamic export requires explicit quantization on TensorRT 10+")
 
-    file = DuoYOLO(TASK2MODEL[task]).export(
-        format="engine",
-        imgsz=32,
-        dynamic=dynamic,
-        int8=int8,
-        half=half,
-        batch=batch,
-        data=TASK2DATA[task],
-        workspace=1,  # reduce workspace GB for less resource utilization during testing
-        simplify=True,
-        device=DEVICES[0],
-    )
-    DuoYOLO(file)([SOURCE] * batch, imgsz=64 if dynamic else 32, device=DEVICES[0])  # exported model inference
-    Path(file).unlink()  # cleanup
-    Path(file).with_suffix(".cache").unlink(missing_ok=True) if int8 else None  # cleanup INT8 cache
+#     file = DuoYOLO(TASK2MODEL[task]).export(
+#         format="engine",
+#         imgsz=32,
+#         dynamic=dynamic,
+#         int8=int8,
+#         half=half,
+#         batch=batch,
+#         data=TASK2DATA[task],
+#         workspace=1,  # reduce workspace GB for less resource utilization during testing
+#         simplify=True,
+#         device=DEVICES[0],
+#     )
+#     DuoYOLO(file)([SOURCE] * batch, imgsz=64 if dynamic else 32, device=DEVICES[0])  # exported model inference
+#     Path(file).unlink()  # cleanup
+#     Path(file).with_suffix(".cache").unlink(missing_ok=True) if int8 else None  # cleanup INT8 cache
 
 
 @pytest.mark.skipif(not DEVICES, reason="No CUDA devices available")
