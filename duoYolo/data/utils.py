@@ -72,11 +72,11 @@ def check_single_dataset(dataset: str, autodownload: bool = True) -> dict[str, A
         (dict[str, Any]): Parsed dataset information and paths.
     """
     try:
-        d = check_file(dataset)
+        dataset = check_file(dataset)
     except FileNotFoundError:
         pass # dataset not found in duoYolo directory, check_det_dataset will handle downloading and search in ultralytics directory
     
-    return check_det_dataset(d, autodownload)
+    return check_det_dataset(dataset, autodownload)
 
 
 def verify_image_label(args: tuple) -> list:

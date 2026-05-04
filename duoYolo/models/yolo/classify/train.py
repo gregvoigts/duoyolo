@@ -4,8 +4,10 @@ from duoYolo.data.build import build_classify_dataset
 
 from ultralytics.models.yolo.classify.train import ClassificationTrainer as BaseClassificationTrainer
 from ultralytics.utils import emojis
-from ultralytics.data.utils import check_det_dataset, check_cls_dataset
+from ultralytics.data.utils import check_cls_dataset
 from ultralytics.utils.torch_utils import unwrap_model
+
+from duoYolo.data.utils import check_single_dataset
 
 class ClassificationTrainer(BaseClassificationTrainer):
     """
@@ -32,7 +34,7 @@ class ClassificationTrainer(BaseClassificationTrainer):
 
         try:
             if str(self.args.data).rsplit(".", 1)[-1] in {"yaml", "yml"}:
-                data = check_det_dataset(self.args.data)
+                data = check_single_dataset(self.args.data)
             else:
                 data = check_cls_dataset(self.args.data, split=self.args.split)
         except Exception as e:

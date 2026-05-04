@@ -214,11 +214,11 @@ def test_track_stream(model, tmp_path):
 
 
 @pytest.mark.parametrize(
-    "task,weight,data",
+    "task,weight,data,data_key",
     TASK_MODEL_DATA,
-    ids=[f"{task}-{weight.name}-{i}" for i, (task, weight, _) in enumerate(TASK_MODEL_DATA)],
+    ids=[f"{task}-{weight.name}-{data_key}" for task, weight, _, data_key in TASK_MODEL_DATA],
 )
-def test_val(task: str, weight: str, data: str) -> None:
+def test_val(task: str, weight: str, data: str, data_key: str) -> None:
     """Test the validation mode of the YOLO model."""
     model = DuoYOLO(weight)
     for plots in {True, False}:  # Test both cases i.e. plots=True and plots=False

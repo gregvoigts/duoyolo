@@ -126,11 +126,11 @@ def test_task(trainer_cls, validator_cls, predictor_cls, data, model, weights):
 
 
 @pytest.mark.parametrize(
-    "task,weight,data",
+    "task,weight,data,data_key",
     TASK_MODEL_DATA,
-    ids=[f"{task}-{weight.name}" for task, weight, _ in TASK_MODEL_DATA],
+    ids=[f"{task}-{weight.name}-{data_key}" for task, weight, _, data_key in TASK_MODEL_DATA],
 )
-def test_resume_incomplete(task, weight, data, tmp_path):
+def test_resume_incomplete(task, weight, data, data_key, tmp_path):
     """Test training resumes from an incomplete checkpoint."""
     train_args = {
         "data": data,

@@ -25,11 +25,11 @@ def test_special_modes() -> None:
 
 
 @pytest.mark.parametrize(
-    "task,model,data",
+    "task,model,data,data_key",
     TASK_MODEL_DATA,
-    ids=[f"{task}-{model.name}" for task, model, _ in TASK_MODEL_DATA],
+    ids=[f"{task}-{model.name}-{data_key}" for task, model, _, data_key in TASK_MODEL_DATA],
 )
-def test_train(task: str, model: str, data: str | dict[str, str]) -> None:
+def test_train(task: str, model: str, data: str | dict[str, str], data_key: str) -> None:
     """Test YOLO training for different tasks, models, and datasets."""
     if isinstance(data, dict):
         run(f"duoyolo train {task} model={model} {' '.join(f'data{i}={v}' for i, v in enumerate(data.values())) } imgsz=32 epochs=1 cache=disk")
@@ -38,11 +38,11 @@ def test_train(task: str, model: str, data: str | dict[str, str]) -> None:
 
 
 @pytest.mark.parametrize(
-    "task,model,data",
+    "task,model,data,data_key",
     TASK_MODEL_DATA,
-    ids=[f"{task}-{model.name}" for task, model, _ in TASK_MODEL_DATA],
+    ids=[f"{task}-{model.name}-{data_key}" for task, model, _, data_key in TASK_MODEL_DATA],
 )
-def test_val(task: str, model: str, data: str | dict[str, str]) -> None:
+def test_val(task: str, model: str, data: str | dict[str, str], data_key: str) -> None:
     """Test YOLO validation process for specified task, model, and data using a shell command."""
     for end2end in {False, True}:
         if isinstance(data, dict):
@@ -56,11 +56,11 @@ def test_val(task: str, model: str, data: str | dict[str, str]) -> None:
 
 
 @pytest.mark.parametrize(
-    "task,model,data",
+    "task,model,data,data_key",
     TASK_MODEL_DATA,
-    ids=[f"{task}-{model.name}" for task, model, _ in TASK_MODEL_DATA],
+    ids=[f"{task}-{model.name}-{data_key}" for task, model, _, data_key in TASK_MODEL_DATA],
 )
-def test_predict(task: str, model: str, data: str) -> None:
+def test_predict(task: str, model: str, data: str, data_key: str) -> None:
     """Test YOLO prediction on provided sample assets for specified task and model."""
     for end2end in {False, True}:
         run(
@@ -88,13 +88,13 @@ def test_export(model: str) -> None:
 # Slow Tests -----------------------------------------------------------------------------------------------------------
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "task,model,data",
+    "task,model,data,data_key",
     TASK_MODEL_DATA,
-    ids=[f"{task}-{model.name}" for task, model, _ in TASK_MODEL_DATA],
+    ids=[f"{task}-{model.name}-{data_key}" for task, model, _, data_key in TASK_MODEL_DATA],
 )
 @pytest.mark.skipif(not CUDA_IS_AVAILABLE, reason="CUDA is not available")
 @pytest.mark.skipif(CUDA_DEVICE_COUNT < 2, reason="DDP is not available")
-def test_train_gpu(task: str, model: str, data: str) -> None:
+def test_train_gpu(task: str, model: str, data: str, data_key: str) -> None:
     """Test YOLO training on GPU(s) for various tasks and models."""
     run(f"duoyolo train {task} model={model} data={data} imgsz=32 epochs=1 device=0")  # single GPU
     run(f"duoyolo train {task} model={model} data={data} imgsz=32 epochs=1 device=0,1")  # multi GPU
