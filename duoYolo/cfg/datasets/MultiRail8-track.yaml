@@ -17,4 +17,4 @@ names:
   0: track
 
 # Download script/URL (optional)
-download: https://github.com/gregvoigts/duoyolo/assets/releases/download/v0.0.0/MultiRail8-track.zip
+download: https://github.com/gregvoigts/duoyolo/releases/download/v0.0.0/MultiRail8-track.zip

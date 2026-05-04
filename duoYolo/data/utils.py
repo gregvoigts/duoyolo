@@ -54,6 +54,31 @@ def check_duo_datasets(dataset: dict[str,str],tasks: List[str], autodownload: bo
 
     return data  # dictionary
 
+def check_single_dataset(dataset: str, autodownload: bool = True) -> dict[str, Any]:
+    """
+    Download, verify, and/or unzip a dataset if not found locally.
+
+    This function checks the availability of a specified dataset, and if not found, it has the option to download and
+    unzip the dataset. It then reads and parses the accompanying YAML data, ensuring key requirements are met and also
+    resolves paths related to the dataset.
+
+    Most of the logic is handled by check_det_dataset, this function is a simple wrapper to support files located under duoYolo root.
+
+    Args:
+        dataset (str): Path to the dataset or dataset descriptor (like a YAML file).
+        autodownload (bool, optional): Whether to automatically download the dataset if not found.
+
+    Returns:
+        (dict[str, Any]): Parsed dataset information and paths.
+    """
+    try:
+        d = check_file(dataset)
+    except FileNotFoundError:
+        pass # dataset not found in duoYolo directory, check_det_dataset will handle downloading and search in ultralytics directory
+    
+    return check_det_dataset(d, autodownload)
+
+
 def verify_image_label(args: tuple) -> list:
     """Verify one image-label pair. Works also for classification label files."""
     im_file, lb_file, prefix, keypoint, classify, num_cls, nkpt, ndim, single_cls = args

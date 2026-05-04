@@ -17,6 +17,7 @@ CUDA_DEVICE_COUNT = checks.cuda_device_count()
 TASK_MODEL_DATA = [(task, (WEIGHTS_DIR / TASK2MODEL[task] if TASK2MODEL[task].endswith(".pt") else Path(TASK2MODEL[task])), TASK2DATA[task]) for task in TASKS]
 MODELS = frozenset([*list([t.replace(".yaml", ".pt") for t in TASK2MODEL.values()]), "yolo11n-grayscale.pt"])
 TASK_MODEL_DATA.append(("multitask", WEIGHTS_DIR / "duoyolo11n-od-seg-cls.pt", {"task_0": "MultiRail8-signal.yaml", "task_1": "MultiRail8-track.yaml", "task_2": "MultiRail8-weather.yaml"}))
+TASK_MODEL_DATA.append(("classify", WEIGHTS_DIR / "yolo11n-cls.pt", "MultiRail8-weather.yaml"))
 
 __all__ = (
     "CFG",

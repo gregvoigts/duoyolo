@@ -4,6 +4,7 @@ import json
 import pandas as pd
 import torch
 
+from duoYolo.data.utils import check_single_dataset
 from duoYolo.nn.autobackend import AutoBackend
 from duoYolo.utils.ops import AdvancedProfile
 from ultralytics.data.utils import check_cls_dataset, check_det_dataset
@@ -81,7 +82,7 @@ class DuoYoloValidatorMixin():
                 LOGGER.info(f"Setting batch={self.args.batch} input of shape ({self.args.batch}, 3, {imgsz}, {imgsz})")
 
             if str(self.args.data).rsplit(".", 1)[-1] in {"yaml", "yml"}:
-                self.data = check_det_dataset(self.args.data)
+                self.data = check_single_dataset(self.args.data)
             elif self.args.task == "classify":
                 self.data = check_cls_dataset(self.args.data, split=self.args.split)
             else:
