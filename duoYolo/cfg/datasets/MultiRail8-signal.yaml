@@ -1,0 +1,79 @@
+# MultiRail8-signal dataset (first 8 images from MultiRail)
+# Documentation: https://github.com/gregvoigts/duoyolo/tree/main/docs/datasets/MultiRail8-signal
+# Example usage: yolo train data=MultiRail8-signal.yaml
+# parent
+# ├── duoYolo
+# └── datasets
+#     └── MultiRail8-signal ← downloads here (1 MB)
+
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path: MultiRail8-signal # dataset root dir
+train: train.txt # train images (relative to 'path') 4 images
+val: val.txt # val images (relative to 'path') 4 images
+test: # test images (optional)
+
+# Classes
+names:
+  0: Hp_0_HV
+  1: Ne_4
+  2: Vr_2
+  3: Hp_1
+  4: Sign_Back
+  5: Signal_Back
+  6: Zs_Off
+  7: Mast_Sign_WYWYW
+  8: Signal_Identifier_Sign
+  9: Hectometer_Sign
+  10: Hp_2
+  11: Vr_0
+  12: Signal_Off
+  13: Mast_Sign_WRW
+  14: Traffic_Sign
+  15: Lf_7
+  16: So_20_Right
+  17: Zs_3
+  18: Vr_1
+  19: Ne_2
+  20: Ks_2
+  21: Ks_1
+  22: Hp_0_Ks
+  23: Platform_Warn_Sign
+  24: Platform_Text_Sign
+  25: Lf_6
+  26: Platform_Display
+  27: Zs_2
+  28: Mast_Sign_Y_Triangle
+  29: So_20_Left
+  30: Traffic_Light
+  31: Sh_2
+  32: Ne_3_2
+  33: Ne_3_1
+  34: Ne_3_3
+  35: Zs_3v
+  36: Ne_5
+  37: Platform_Track_Sign
+  38: Zs_6
+  39: Signal_Invalid
+  40: Lf_3
+  41: Ne_1
+  42: Ride_Indicator_1
+  43: Hp_0_Sh
+  44: Zs_2v
+  45: Sh_1
+  46: Sh_0
+  47: Ne_3_5
+  48: Ne_3_4
+  49: ICE
+  50: Wn_2
+  51: Ne_7a
+  52: Wn_1
+  53: El_6
+  54: Ra_10
+  55: Ride_Indicator_Off
+  56: LZB
+  57: Ne_7b
+  58: Ne_6
+  59: Lf_2
+
+# Download script/URL (optional)
+download: https://github.com/gregvoigts/duoyolo/assets/releases/download/v0.0.0/MultiRail8-signal.zip

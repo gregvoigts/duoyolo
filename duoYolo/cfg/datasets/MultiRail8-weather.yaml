@@ -1,0 +1,25 @@
+# MultiRail8-weather dataset (first 8 images from MultiRail)
+# Documentation: https://github.com/gregvoigts/duoyolo/tree/main/docs/datasets/MultiRail8-weather
+# Example usage: yolo train data=MultiRail8-weather.yaml
+# parent
+# ├── duoYolo
+# └── datasets
+#     └── MultiRail8-weather ← downloads here (1 MB)
+
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path: MultiRail8-weather # dataset root dir
+train: train.txt # train images (relative to 'path') 4 images
+val: val.txt # val images (relative to 'path') 4 images
+test: # test images (optional)
+
+# Classes
+names:
+  0: Cloudy
+  1: Foggy
+  2: Rainy
+  3: Snowy
+  4: Sunny
+  5: Unknown
+
+# Download script/URL (optional)
+download: https://github.com/gregvoigts/duoyolo/assets/releases/download/v0.0.0/MultiRail8-weather.zip

@@ -2,6 +2,7 @@ from copy import deepcopy
 import os
 from typing import Any, List
 from pyparsing import Path
+from duoYolo.utils.checks import check_file
 from ultralytics.data.utils import check_det_dataset, exif_size, IMG_FORMATS, FORMATS_HELP_MSG, segments2boxes
 import numpy as np
 from PIL import Image, ImageOps
@@ -29,6 +30,13 @@ def check_duo_datasets(dataset: dict[str,str],tasks: List[str], autodownload: bo
         (dict[str, Any]): Parsed dataset information and paths.
     """
     assert len(dataset) == len(tasks), "Number of datasets must match number of tasks."
+
+    for task in dataset.keys():
+        d = dataset[task]
+        try:
+            dataset[task] = check_file(d)
+        except FileNotFoundError:
+            pass # dataset not found in duoYolo directory, check_det_dataset will handle downloading and search in ultralytics directory
 
     data_dicts = {task: check_det_dataset(d, autodownload) if d else None for task, d in sorted(dataset.items())}
 
