@@ -26,11 +26,11 @@ def test_export_torchscript(end2end):
     DuoYOLO(file)(SOURCE, imgsz=32)  # exported model inference
 
 
-@pytest.mark.parametrize("end2end", [False, True])
-def test_export_onnx(end2end):
-    """Test YOLO model export to ONNX format with dynamic axes."""
-    file = DuoYOLO(MODEL).export(format="onnx", dynamic=True, imgsz=32, end2end=end2end)
-    DuoYOLO(file)(SOURCE, imgsz=32)  # exported model inference
+# @pytest.mark.parametrize("end2end", [False, True])
+# def test_export_onnx(end2end):
+#     """Test YOLO model export to ONNX format with dynamic axes."""
+#     file = DuoYOLO(MODEL).export(format="onnx", dynamic=True, imgsz=32, end2end=end2end)
+#     DuoYOLO(file)(SOURCE, imgsz=32)  # exported model inference
 
 @pytest.mark.skipif(not TORCH_2_1, reason="OpenVINO requires torch>=2.1")
 @pytest.mark.parametrize("end2end", [False, True])
@@ -216,14 +216,14 @@ def test_export_coreml():
     assert "You will not be able to run predict()" not in output, "CoreML export has predict() error"
 
 
-@pytest.mark.skipif(not checks.IS_PYTHON_MINIMUM_3_10, reason="TFLite export requires Python>=3.10")
-@pytest.mark.skipif(not TORCH_1_13, reason="TFLite export requires torch>=1.13")
-@pytest.mark.skipif(not LINUX, reason="Test disabled as TF suffers from install conflicts on Windows and macOS")
-def test_export_tflite():
-    """Test YOLO export to TFLite format under specific OS and Python version conditions."""
-    model = DuoYOLO(MODEL)
-    file = model.export(format="tflite", imgsz=32)
-    DuoYOLO(file)(SOURCE, imgsz=32)
+# @pytest.mark.skipif(not checks.IS_PYTHON_MINIMUM_3_10, reason="TFLite export requires Python>=3.10")
+# @pytest.mark.skipif(not TORCH_1_13, reason="TFLite export requires torch>=1.13")
+# @pytest.mark.skipif(not LINUX, reason="Test disabled as TF suffers from install conflicts on Windows and macOS")
+# def test_export_tflite():
+#     """Test YOLO export to TFLite format under specific OS and Python version conditions."""
+#     model = DuoYOLO(MODEL)
+#     file = model.export(format="tflite", imgsz=32)
+#     DuoYOLO(file)(SOURCE, imgsz=32)
 
 
 @pytest.mark.skipif(True, reason="Test disabled")

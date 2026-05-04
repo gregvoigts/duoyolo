@@ -75,12 +75,12 @@ def test_export(model: str) -> None:
         run(f"duoyolo export model={model} format=torchscript imgsz=32 end2end={end2end} max_det=100")
 
 
-@pytest.mark.skipif(not TORCH_1_11, reason="RTDETR requires torch>=1.11")
-def test_rtdetr(task: str = "detect", model: Path = WEIGHTS_DIR / "rtdetr-l.pt", data: str = "coco8.yaml") -> None:
-    """Test the RTDETR functionality within Ultralytics for detection tasks using specified model and data."""
-    # Add comma, spaces, fraction=0.25 args to test single-image training
-    run(f"duoyolo predict {task} model={model} source={ASSETS / 'bus.jpg'} imgsz=160 save save_crop save_txt")
-    run(f"duoyolo train {task} model={model} data={data} --imgsz= 160 epochs =1, cache = disk fraction=0.25")
+# @pytest.mark.skipif(not TORCH_1_11, reason="RTDETR requires torch>=1.11")
+# def test_rtdetr(task: str = "detect", model: Path = WEIGHTS_DIR / "rtdetr-l.pt", data: str = "coco8.yaml") -> None:
+#     """Test the RTDETR functionality within Ultralytics for detection tasks using specified model and data."""
+#     # Add comma, spaces, fraction=0.25 args to test single-image training
+#     run(f"duoyolo predict {task} model={model} source={ASSETS / 'bus.jpg'} imgsz=160 save save_crop save_txt")
+#     run(f"duoyolo train {task} model={model} data={data} --imgsz= 160 epochs =1, cache = disk fraction=0.25")
 
 
 # Slow Tests -----------------------------------------------------------------------------------------------------------

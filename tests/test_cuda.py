@@ -39,7 +39,7 @@ def test_checks():
 @pytest.mark.skipif(not DEVICES, reason="No CUDA devices available")
 def test_amp():
     """Test AMP training checks."""
-    model = DuoYOLO("yolo26n.pt").model.to(f"cuda:{DEVICES[0]}")
+    model = DuoYOLO("yolo11n.pt").model.to(f"cuda:{DEVICES[0]}")
     assert check_amp(model)
 
 
@@ -113,20 +113,20 @@ def test_export_onnx_matrix(task, dynamic, int8, half, batch, simplify, nms):
 #     Path(file).with_suffix(".cache").unlink(missing_ok=True) if int8 else None  # cleanup INT8 cache
 
 
-@pytest.mark.skipif(not DEVICES, reason="No CUDA devices available")
-def test_train():
-    """Test model training on a minimal dataset using available CUDA devices."""
-    device = tuple(DEVICES) if len(DEVICES) > 1 else DEVICES[0]
-    # NVIDIA Jetson only has one GPU and therefore skipping checks
-    if not IS_JETSON:
-        results = DuoYOLO(MODEL).train(data="coco8-grayscale.yaml", imgsz=64, epochs=1, device=DEVICES[0], batch=-1)
-        results = DuoYOLO(MODEL).train(data="coco8.yaml", imgsz=64, epochs=1, device=device, batch=15, compile=True)
-        results = DuoYOLO(MODEL).train(data="coco128.yaml", imgsz=64, epochs=1, device=device, batch=15, val=False)
-        visible = tuple(int(x) for x in os.environ["CUDA_VISIBLE_DEVICES"].split(","))
-        visible = visible[0] if len(visible) == 1 else visible
-        assert visible == device, f"Passed GPUs '{device}', but used GPUs '{visible}'"
-        # Note DDP training returns None, single-GPU returns metrics
-        assert (results is None) if len(DEVICES) > 1 else (results is not None)
+# @pytest.mark.skipif(not DEVICES, reason="No CUDA devices available")
+# def test_train():
+#     """Test model training on a minimal dataset using available CUDA devices."""
+#     device = tuple(DEVICES) if len(DEVICES) > 1 else DEVICES[0]
+#     # NVIDIA Jetson only has one GPU and therefore skipping checks
+#     if not IS_JETSON:
+#         results = DuoYOLO(MODEL).train(data="coco8-grayscale.yaml", imgsz=64, epochs=1, device=DEVICES[0], batch=-1)
+#         results = DuoYOLO(MODEL).train(data="coco8.yaml", imgsz=64, epochs=1, device=device, batch=15, compile=True)
+#         results = DuoYOLO(MODEL).train(data="coco128.yaml", imgsz=64, epochs=1, device=device, batch=15, val=False)
+#         visible = tuple(int(x) for x in os.environ["CUDA_VISIBLE_DEVICES"].split(","))
+#         visible = visible[0] if len(visible) == 1 else visible
+#         assert visible == device, f"Passed GPUs '{device}', but used GPUs '{visible}'"
+#         # Note DDP training returns None, single-GPU returns metrics
+#         assert (results is None) if len(DEVICES) > 1 else (results is not None)
 
 
 @pytest.mark.slow

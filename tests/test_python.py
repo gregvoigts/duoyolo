@@ -40,6 +40,8 @@ from ultralytics.utils import (
 from ultralytics.utils.downloads import download, safe_download
 from ultralytics.utils.torch_utils import TORCH_1_11, TORCH_1_13
 
+from duoYolo.engine.multitask_result import MultitaskResults
+
 
 def test_model_forward():
     """Test the forward pass of the YOLO model."""
@@ -303,7 +305,8 @@ def test_results(model: str, tmp_path):
     """Test YOLO model results processing and output in various formats."""
     im = "https://cdn.jsdelivr.net/gh/ultralytics/assets@main/im/boats.jpg" if model == "yolo11n-obb.pt" else SOURCE
     results = DuoYOLO(WEIGHTS_DIR / model)([im, im], imgsz=160)
-    for r in results:
+
+    def check_results(r):
         assert len(r), f"'{model}' results should not be empty!"
         r = r.cpu().numpy()
         print(r, len(r), r.path)  # print numpy attributes
@@ -316,6 +319,13 @@ def test_results(model: str, tmp_path):
         r.plot(pil=True, save=True, filename=tmp_path / "results_plot_save.jpg")
         r.plot(conf=True, boxes=True)
         print(r, len(r), r.path)  # print after methods
+    
+    for r in results:
+        if type(r) is MultitaskResults:
+            for task, r_t in r.results_dict.items():
+                check_results(r_t)
+        else:        
+            check_results(r)
 
 
 def test_labels_and_crops():
