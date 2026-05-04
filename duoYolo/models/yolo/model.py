@@ -55,8 +55,6 @@ class DuoYOLO(BaseYolo):
         if self.task == "multitask":
             self.tasks = [name for name, _ in self.model.get_heads()]
 
-        self.callbacks["on_export_start"].append(self.on_export_start_callback)
-
     def _check_kwargs(self, kwargs: dict[str, Any]) -> None:
         """Normalize kwargs for multitask (dict data) vs single-task (str data). Remove task-specific args."""
         if self.task == "multitask":
@@ -251,6 +249,7 @@ class DuoYOLO(BaseYolo):
         if self.task == "multitask":
             raise NotImplementedError("Export functionality is not implemented for Multitask models yet.")
 
+        # self.callbacks["on_export_start"].append(self.on_export_start_callback)
         # stride = self.model.stride if hasattr(self.model, "stride") else None
         # self.model.stride = stride.flatten() if isinstance(stride, torch.Tensor) else stride        
         r = super().export(**kwargs) 
