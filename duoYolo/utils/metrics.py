@@ -139,9 +139,11 @@ class MultitaskConfusionMatrix(DataExportMixin):
         Returns:
             (dict[str,list[dict[str, float]]]): A list of dictionaries, each representing one predicted class with corresponding values for all actual classes for each class
         """
-        summary = {}
+        summary = []
         for name, m in self.matrices.items():
-            summary[name] = m.summary(normalize=normalize, decimals=decimals)
+            s = m.summary(normalize=normalize, decimals=decimals)
+            s = [{**entry, "Task": name} for entry in s]  # Add task name to each entry
+            summary.extend(s)
         return summary
         
 

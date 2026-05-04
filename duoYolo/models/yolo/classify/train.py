@@ -1,5 +1,7 @@
 """Classification trainer using DuoYOLO datasets."""
 
+from copy import copy
+
 from duoYolo.data.build import build_classify_dataset
 
 from ultralytics.models.yolo.classify.train import ClassificationTrainer as BaseClassificationTrainer
@@ -8,6 +10,7 @@ from ultralytics.data.utils import check_cls_dataset
 from ultralytics.utils.torch_utils import unwrap_model
 
 from duoYolo.data.utils import check_single_dataset
+from duoYolo.models import yolo
 
 class ClassificationTrainer(BaseClassificationTrainer):
     """
@@ -40,3 +43,10 @@ class ClassificationTrainer(BaseClassificationTrainer):
         except Exception as e:
             raise RuntimeError(emojis(f"Dataset '{self.args.data}' error ❌ {e}")) from e
         return data
+
+    def get_validator(self):
+        """Return an instance of ClassificationValidator for validation."""
+        self.loss_names = ["loss"]
+        return yolo.classify.ClassificationValidator(
+            self.test_loader, self.save_dir, args=copy(self.args), _callbacks=self.callbacks
+        )
