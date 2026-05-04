@@ -14,6 +14,7 @@ import pytest
 import torch
 from PIL import Image
 
+from duoYolo.utils.metrics import MultitaskConfusionMatrix, MultitaskMetrics
 from tests import CFG, MODEL, MODELS, SOURCE, SOURCES_LIST, TASK_MODEL_DATA
 from duoYolo import DuoYOLO
 from duoYolo.cfg import TASK2DATA, TASKS
@@ -197,7 +198,7 @@ def test_track_stream(model, tmp_path):
 
     Note imgsz=160 required for tracking for higher confidence and better matches.
     """
-    if model == "yolo11n-cls.pt":  # classification model not supported for tracking
+    if model == "yolo11n-cls.pt" or model =="duoyolo11n-od-seg.pt":  # classification model not supported for tracking
         return
     video_url = f"{ASSETS_URL}/decelera_portrait_min.mov"
     model = DuoYOLO(model)
@@ -222,6 +223,11 @@ def test_val(task: str, weight: str, data: str) -> None:
     model = DuoYOLO(weight)
     for plots in {True, False}:  # Test both cases i.e. plots=True and plots=False
         metrics = model.val(data=data, imgsz=32, plots=plots)
+        if task == "multitask":
+            assert isinstance(metrics, MultitaskMetrics), f"Expected MultitaskMetrics for multitask task, got {type(metrics)}"
+            assert len(metrics.metrics) == len(data), f"Expected metrics for {len(data)} tasks, got {len(metrics.metrics)}"
+            assert isinstance(metrics.confusion_matrix, MultitaskConfusionMatrix), f"Expected confusion_matrix to be a MultitaskConfusionMatrix for multitask, got {type(metrics.confusion_matrix)}"
+            assert len(metrics.confusion_matrix.matrices) == len(data), f"Expected confusion matrices for {len(data)} tasks, got {len(metrics.confusion_matrix.matrices)}"
         metrics.to_df()
         metrics.to_csv()
         metrics.to_json()

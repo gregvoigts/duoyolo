@@ -8,6 +8,7 @@ import cv2
 
 import torch
 from duoYolo.engine.multitask_result import MultitaskResults
+from duoYolo.nn.autobackend import AutoBackend
 from duoYolo.utils import DEFAULT_CFG
 from ultralytics.engine.predictor import BasePredictor
 from ultralytics.models import yolo
@@ -17,6 +18,7 @@ from ultralytics.models.yolo.obb.predict import OBBPredictor
 from ultralytics.models.yolo.pose.predict import PosePredictor
 from ultralytics.models.yolo.segment.predict import SegmentationPredictor
 from ultralytics.utils import MACOS, WINDOWS
+from ultralytics.utils.torch_utils import attempt_compile, select_device
 
 
 class MultitaskPredictor(BasePredictor):
@@ -56,14 +58,16 @@ class MultitaskPredictor(BasePredictor):
         """
         constructed_self = SimpleNamespace(
             args=self.args,
-            model=self.model,
+            model=SimpleNamespace(names=self.model.names[0], end2end=False),
             _feats=getattr(self, "_feats", None),
             batch=self.batch     
         )
         results = ()
         for idx, (pred, task) in enumerate(zip(preds, self.args.tasks)):
+            constructed_self.model.names = self.model.names[idx]
+            constructed_self.model.end2end = self.model.end2end[f"task_{idx}"]
             if task == "detect":
-                v = DetectionPredictor.__new__(DetectionPredictor)
+                v = DetectionPredictor.__new__(DetectionPredictor)                
                 v.__dict__.update(constructed_self.__dict__)                
                 res = v.postprocess(pred, img, orig_img)
                 results += (res,)
@@ -179,3 +183,28 @@ class MultitaskPredictor(BasePredictor):
         # Save images
         else:
             cv2.imwrite(str(save_path.with_suffix(".jpg")), im)  # save to JPG for best support
+
+    def setup_model(self, model, verbose: bool = True):
+        """
+        Initialize DuoYOLO model with given parameters and set it to evaluation mode.
+
+        Args:
+            model (str | Path | torch.nn.Module, optional): Model to load or use.
+            verbose (bool): Whether to print verbose output.
+        """
+        self.model = AutoBackend(
+            model=model or self.args.model,
+            device=select_device(self.args.device, verbose=verbose),
+            dnn=self.args.dnn,
+            data=self.args.data,
+            fp16=self.args.half,
+            fuse=True,
+            verbose=verbose,
+        )
+
+        self.device = self.model.device  # update device
+        self.args.half = self.model.fp16  # update half
+        if hasattr(self.model, "imgsz") and not getattr(self.model, "dynamic", False):
+            self.args.imgsz = self.model.imgsz  # reuse imgsz from export metadata
+        self.model.eval()
+        self.model = attempt_compile(self.model, device=self.device, mode=self.args.compile)

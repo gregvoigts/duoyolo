@@ -19,6 +19,7 @@ from duoYolo.models.yolo import PoseTrainer, PoseValidator, PosePredictor
 from duoYolo.nn.tasks import MultitaskModel, guess_model_task, load_partial_weights, yaml_model_load
 from duoYolo.nn import DetectionModel, SegmentationModel, ClassificationModel, OBBModel, PoseModel
 import duoYolo.cfg # noqa: F401 to register 'multitask' task
+from duoYolo import __version__
 
 class DuoYOLO(BaseYolo):
     """
@@ -53,6 +54,8 @@ class DuoYOLO(BaseYolo):
         super().__init__(model=model, task=task, verbose=verbose)
         if self.task == "multitask":
             self.tasks = [name for name, _ in self.model.get_heads()]
+
+        self.callbacks["on_export_start"].append(self.on_export_start_callback)
 
     def _check_kwargs(self, kwargs: dict[str, Any]) -> None:
         """Normalize kwargs for multitask (dict data) vs single-task (str data). Remove task-specific args."""
@@ -203,6 +206,68 @@ class DuoYOLO(BaseYolo):
         self._check_kwargs(kwargs)
         return super().val(validator=validator, **kwargs)
     
+    def track(
+        self,
+        source: str | Path | int | list | tuple | np.ndarray | torch.Tensor = None,
+        stream: bool = False,
+        persist: bool = False,
+        **kwargs: Any,
+    ) -> list[Results]:
+        if self.task == "multitask":
+            raise NotImplementedError("Tracking functionality is not implemented for Multitask models yet.")
+        return super().track(source, stream, persist, **kwargs)
+
+    def export(
+        self,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Export the model to a different format suitable for deployment.
+
+        This method facilitates the export of the model to various formats (e.g., ONNX, TorchScript) for deployment
+        purposes. It uses the 'Exporter' class for the export process, combining model-specific overrides, method
+        defaults, and any additional arguments provided. For multitask models an adapted exporter is used to adapt metadata and handle multitask models correctly.
+
+        Args:
+            **kwargs (Any): Arbitrary keyword arguments to customize the export process. These are combined with
+                the model's overrides and method defaults. Common arguments include:
+                format (str): Export format (e.g., 'onnx', 'engine', 'coreml').
+                half (bool): Export model in half-precision.
+                int8 (bool): Export model in int8 precision.
+                device (str): Device to run the export on.
+                workspace (int): Maximum memory workspace size for TensorRT engines.
+                nms (bool): Add Non-Maximum Suppression (NMS) module to model.
+                simplify (bool): Simplify ONNX model.
+
+        Returns:
+            (str): The path to the exported model file.
+
+        Raises:
+            AssertionError: If the model is not a PyTorch model.
+            ValueError: If an unsupported export format is specified.
+            RuntimeError: If the export process fails due to errors.
+
+        """
+        if self.task == "multitask":
+            raise NotImplementedError("Export functionality is not implemented for Multitask models yet.")
+
+        # stride = self.model.stride if hasattr(self.model, "stride") else None
+        # self.model.stride = stride.flatten() if isinstance(stride, torch.Tensor) else stride        
+        r = super().export(**kwargs) 
+        # self.model.stride = stride  # restore original stride
+        return r
+
+    def on_export_start_callback(self, exporter):
+        """Callback function to modify exporter metadata for DuoYOLO models during export."""
+        if exporter.model.task == "multitask":            
+            exporter.metadata = {
+                **exporter.metadata,
+                "description": exporter.metadata["description"].replace("Ultralytics", "DuoYOLO"),
+                "author": "DuoYOLO",
+                "license": "AGPL-3.0 License (https://github.com/gregvoigts/duoyolo/blob/main/LICENSE)",
+                "version": __version__
+            }
+
     @property
     def task_map(self) -> dict[str, dict[str, Any]]:
         """Map head to model, trainer, validator, and predictor classes."""

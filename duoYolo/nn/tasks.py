@@ -25,6 +25,9 @@ from duoYolo.utils.loss import MultitaskLoss
 class MultitaskModel(BaseModel):
     """Multitask model supporting multiple detection heads."""
 
+    def __setattr__(self, name, value):
+        super().__setattr__(name, value)
+
     def __init__(self, cfg="duoyolov8n-od-cls.yaml", ch=3, nc=None, verbose=True):
         """
         Initialize the YOLO multiclass model with the given config and parameters.
