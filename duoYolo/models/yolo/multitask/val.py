@@ -162,7 +162,7 @@ class MultitaskValidator(DuoYoloValidatorMixin, BaseValidator):
                 pred = pred[0] if isinstance(pred, (list,tuple)) else pred
                 n5 = min(self.nc[i], 5)
                 sorted = pred.argsort(1, descending=True)[:, :n5]
-                outputs[f"task_{i}"] = [{"cls":o} for o in sorted.type(torch.int32).cpu().unbind(dim=0)]          
+                outputs[f"task_{i}"] = [{"cls":o, "conf":p} for o,p in zip(sorted.type(torch.int32).cpu().unbind(dim=0), pred.type(torch.float32).cpu().unbind(dim=0))]          
                 continue
 
             if task == "segment":
@@ -634,12 +634,14 @@ class MultitaskValidator(DuoYoloValidatorMixin, BaseValidator):
         task = self.args.tasks[task_idx]
         save_bbox = task in {"detect", "obb", "pose", "segment"}
         save_mask = task == "segment"
+        save_probs = task == "classify"
 
         Results(
             np.zeros((shape[0], shape[1]), dtype=np.uint8),
             path=None,
             names=self.names[task_idx],
-            boxes=torch.cat([predn["bboxes"], predn["conf"].unsqueeze(-1), predn["cls"].unsqueeze(-1)], dim=1) if save_bbox else predn["cls"].unsqueeze(-1),
+            probs=predn["conf"] if save_probs else None,
+            boxes=torch.cat([predn["bboxes"], predn["conf"].unsqueeze(-1), predn["cls"].unsqueeze(-1)], dim=1) if save_bbox else None,
             masks=torch.as_tensor(predn["masks"], dtype=torch.uint8) if save_mask else None,
         ).save_txt(file, save_conf=save_conf)
 
