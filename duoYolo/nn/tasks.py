@@ -261,6 +261,20 @@ class MultitaskModel(BaseModel):
     def init_criterion(self):
         return MultitaskLoss(self, lambda_list=self.lambda_list)
 
+class MultitaskClassCount:
+    """Helper class to handle multiple class counts for multitask datasets. 
+    Supports comparison with integers and lists of integers."""
+    
+    def __init__(self, nc):
+        self.nc = nc
+    
+    def __eq__(self, value):
+        if self.nc == value:
+            return True
+        if isinstance(self.nc, list) and value in self.nc:
+            return True
+        return False        
+
 def parse_multitask_model(d, ch, verbose=True):
     """Parse a multitask model dictionary. Replaces the 'nc' strings in the head args with the correct number of classes for each task.
 
@@ -272,14 +286,17 @@ def parse_multitask_model(d, ch, verbose=True):
     Returns:
         MultitaskModel: The parsed multitask model.
     """
-
+    nc = d['nc']
+    d['nc'] = MultitaskClassCount(nc)  # wrap nc in helper class for flexible comparison in head parsing
     for (f, n, m, args) in d["head"]:  # from, number, module, args
         for arg in args:
             if isinstance(arg, str) and arg.startswith("nc"):  # number of classes
                 task_idx = int(arg[2:]) if len(arg) > 2 else 0
-                args[args.index(arg)] = d["nc"][task_idx]  # nc per task
-
+                args[args.index(arg)] = nc[task_idx]  # nc per task
+                    
     return parse_model(d, ch, verbose)
+
+
 
 def guess_model_task(model):
     """

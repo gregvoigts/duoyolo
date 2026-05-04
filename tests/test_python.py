@@ -222,7 +222,7 @@ def test_val(task: str, weight: str, data: str, data_key: str) -> None:
     """Test the validation mode of the YOLO model."""
     model = DuoYOLO(weight)
     for plots in {True, False}:  # Test both cases i.e. plots=True and plots=False
-        metrics = model.val(data=data, imgsz=32, plots=plots)
+        metrics = model.val(data=data, imgsz=32, plots=plots, save_json=True)
         if task == "multitask":
             assert isinstance(metrics, MultitaskMetrics), f"Expected MultitaskMetrics for multitask task, got {type(metrics)}"
             assert len(metrics.metrics) == len(data), f"Expected metrics for {len(data)} tasks, got {len(metrics.metrics)}"

@@ -1,6 +1,7 @@
 """Multitask validator for evaluating models with multiple detection heads."""
 
 import json
+from multiprocessing.pool import ThreadPool
 from types import SimpleNamespace
 from typing import Any
 import numpy as np
@@ -10,7 +11,7 @@ import torch
 import torch.nn.functional as F
 
 from ultralytics.engine.validator import BaseValidator
-from ultralytics.utils import LOGGER, RANK, TQDM, callbacks, colorstr, ops, nms
+from ultralytics.utils import LOGGER, NUM_THREADS, RANK, TQDM, callbacks, colorstr, ops, nms
 from ultralytics.utils.checks import check_imgsz, check_requirements
 from ultralytics.utils.torch_utils import attempt_compile, select_device, smart_inference_mode, unwrap_model
 from ultralytics.utils.metrics import OKS_SIGMA, box_iou, kpt_iou, mask_iou
@@ -373,15 +374,16 @@ class MultitaskValidator(DuoYoloValidatorMixin, BaseValidator):
 
                 # Save
                 if self.args.save_json or self.args.save_txt:
-                    predn_scaled = self.scale_preds(predn, pbatch)
+                    predn_scaled = self.scale_preds(predn, pbatch, self.args.tasks[task_idx])
                 if self.args.save_json:
-                    self.pred_to_json(predn_scaled, pbatch)
+                    self.pred_to_json(predn_scaled, pbatch, task_idx)
                 if self.args.save_txt:
                     self.save_one_txt(
                         predn_scaled,
                         self.args.save_conf,
                         pbatch["ori_shape"],
-                        self.save_dir / "labels" / f"{Path(pbatch['im_file']).stem}.txt",
+                        task_idx,
+                        self.save_dir / "labels" / f"{Path(pbatch['im_file']).stem}.txt",                        
                     )
         # update metrics after all tasks are processed
         self.metrics.update_stats(
@@ -629,12 +631,16 @@ class MultitaskValidator(DuoYoloValidatorMixin, BaseValidator):
             file (Path): File path to save the detections.
         """
         from ultralytics.engine.results import Results
+        task = self.args.tasks[task_idx]
+        save_bbox = task in {"detect", "obb", "pose", "segment"}
+        save_mask = task == "segment"
 
         Results(
             np.zeros((shape[0], shape[1]), dtype=np.uint8),
             path=None,
             names=self.names[task_idx],
-            boxes=torch.cat([predn["bboxes"], predn["conf"].unsqueeze(-1), predn["cls"].unsqueeze(-1)], dim=1),
+            boxes=torch.cat([predn["bboxes"], predn["conf"].unsqueeze(-1), predn["cls"].unsqueeze(-1)], dim=1) if save_bbox else predn["cls"].unsqueeze(-1),
+            masks=torch.as_tensor(predn["masks"], dtype=torch.uint8) if save_mask else None,
         ).save_txt(file, save_conf=save_conf)
 
     def pred_to_json(self, predn: dict[str, torch.Tensor], pbatch: dict[str, Any], task_idx:int) -> None:
@@ -656,33 +662,71 @@ class MultitaskValidator(DuoYoloValidatorMixin, BaseValidator):
              ...     "score": 0.236,
              ... }
         """
+        task = self.args.tasks[task_idx]
+        save_bbox = task in {"detect", "obb", "pose", "segment"}
+
+        rles = None
+        if task == "segment":
+            from faster_coco_eval.core.mask import encode  # noqa
+
+            def single_encode(x):
+                """Encode predicted masks as RLE and append results to jdict."""
+                rle = encode(np.asarray(x[:, :, None], order="F", dtype="uint8"))[0]
+                rle["counts"] = rle["counts"].decode("utf-8")
+                return rle
+
+            pred_masks = np.transpose(predn["masks"], (2, 0, 1))
+            with ThreadPool(NUM_THREADS) as pool:
+                rles = pool.map(single_encode, pred_masks)
+
         path = Path(pbatch["im_file"])
         stem = path.stem
         image_id = int(stem) if stem.isnumeric() else stem
-        box = ops.xyxy2xywh(predn["bboxes"])  # xywh
-        box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
-        for b, s, c in zip(box.tolist(), predn["conf"].tolist(), predn["cls"].tolist()):
-            self.jdict.append(
-                {
+
+        box = None
+        conf = None
+        if save_bbox:
+            box = ops.xyxy2xywh(predn["bboxes"])  # xywh
+            box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
+            box = box.tolist()
+            conf = predn["conf"].tolist()
+
+        for idx, c in enumerate(predn["cls"].tolist()):
+            j ={
                     "image_id": image_id,
                     "file_name": path.name,
-                    "category_id": self.class_map[int(c)],
-                    "bbox": [round(x, 3) for x in b],
-                    "score": round(s, 5),
+                    "category_id": self.class_map[task_idx][int(c)]
                 }
+            if save_bbox and box is not None:
+                j["bbox"] = [round(x, 3) for x in box[idx]]
+                j["score"] = round(conf[idx], 5)
+            if rles is not None:
+                j["segmentation"] = rles[idx]
+            self.jdict[f'task_{task_idx}'].append(
+                j
             )
 
-    def scale_preds(self, predn: dict[str, torch.Tensor], pbatch: dict[str, Any]) -> dict[str, torch.Tensor]:
+    def scale_preds(self, predn: dict[str, torch.Tensor], pbatch: dict[str, Any], task: str) -> dict[str, torch.Tensor]:
         """Scales predictions to the original image size."""
-        return {
-            **predn,
-            "bboxes": ops.scale_boxes(
+        scale_bbox = task in {"detect", "obb", "pose", "segment"}
+        scale_mask = task == "segment"
+
+        ret = {**predn}
+        if scale_bbox and "bboxes" in predn:
+            ret["bboxes"] = ops.scale_boxes(
                 pbatch["imgsz"],
                 predn["bboxes"].clone(),
                 pbatch["ori_shape"],
                 ratio_pad=pbatch["ratio_pad"],
-            ),
-        }
+            )
+        if scale_mask and "masks" in predn:
+            ret["masks"] = ops.scale_image(
+            torch.as_tensor(predn["masks"], dtype=torch.uint8).permute(1, 2, 0).contiguous().cpu().numpy(),
+            pbatch["ori_shape"],
+            ratio_pad=pbatch["ratio_pad"],
+        )
+        return ret
+        
 
     def eval_json(self, stats: dict[str, Any]) -> dict[str, Any]:
         """
@@ -833,7 +877,7 @@ class MultitaskValidator(DuoYoloValidatorMixin, BaseValidator):
         )
         bar = TQDM(self.dataloader, desc=self.get_desc(), total=len(self.dataloader))
         self.init_metrics(unwrap_model(model))
-        self.jdict = []  # empty before each val
+        self.jdict = { f'task_{i}': [] for i,k in enumerate(self.args.tasks ) }  # empty before each val
         for batch_i, batch in enumerate(bar):
             self.run_callbacks("on_val_batch_start")
             self.batch_i = batch_i

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from duoYolo.cfg import entrypoint
 from tests import CUDA_DEVICE_COUNT, CUDA_IS_AVAILABLE, MODELS, TASK_MODEL_DATA
 from ultralytics.utils import ASSETS, WEIGHTS_DIR
 from ultralytics.utils.torch_utils import TORCH_1_11
